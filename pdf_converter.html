@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>أثر | محول المستندات الذكي Pro</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <!-- Dependencies -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+    <script src="https://unpkg.com/html-docx-js/dist/html-docx.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+
+    <script src="protection.js"></script>
+    <script src="js/global_settings.js"></script>
+
+    <style>
+        .converter-container {
+            max-width: 900px;
+            margin: 0 auto;
+            min-height: 80vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .upload-zone {
+            border: 3px dashed var(--glass-border);
+            border-radius: 24px;
+            padding: 60px 20px;
+            text-align: center;
+            background: rgba(255, 255, 255, 0.02);
+            transition: 0.3s;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .upload-zone:hover,
+        .upload-zone.dragover {
+            border-color: var(--primary);
+            background: rgba(99, 102, 241, 0.05);
+            transform: scale(1.01);
+        }
+
+        .upload-icon {
+            font-size: 5rem;
+            color: var(--text-secondary);
+            margin-bottom: 20px;
+            transition: 0.3s;
+        }
+
+        .upload-zone:hover .upload-icon {
+            color: var(--primary);
+            transform: translateY(-10px);
+        }
+
+        .file-info {
+            display: none;
+            margin-top: 20px;
+            padding: 15px;
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            border-radius: 12px;
+            color: #10b981;
+            font-weight: bold;
+        }
+
+        .process-steps {
+            display: flex;
+            justify-content: space-between;
+            margin: 40px 0;
+            position: relative;
+        }
+
+        .p-step {
+            text-align: center;
+            opacity: 0.5;
+            transition: 0.3s;
+            flex: 1;
+        }
+
+        .p-step.active {
+            opacity: 1;
+            transform: scale(1.1);
+        }
+
+        .p-icon {
+            width: 50px;
+            height: 50px;
+            background: var(--glass-bg);
+            border: 2px solid var(--glass-border);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 10px;
+            font-size: 1.2rem;
+        }
+
+        .active .p-icon {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+            box-shadow: 0 0 20px rgba(99, 102, 241, 0.4);
+        }
+
+        #convertBtn {
+            display: none;
+            width: 100%;
+            padding: 20px;
+            font-size: 1.3rem;
+        }
+
+        .loader-box {
+            display: none;
+            text-align: center;
+            padding: 40px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 10px;
+            background: var(--glass-bg);
+            border-radius: 5px;
+            margin-top: 20px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, var(--primary), var(--accent));
+            transition: 0.3s;
+        }
+    </style>
+</head>
+
+<body class="light-theme">
+    <div class="bg-blobs">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-3"></div>
+    </div>
+
+    <div class="container converter-container">
+        <nav style="margin-bottom: 20px;">
+            <div class="logo-container">
+                <a href="index.html" style="text-decoration:none; display:flex; align-items:center; gap:15px;">
+                    <img src="تنزيل.jpg" alt="Logo" id="mainLogo" style="width:50px; height:50px; border-radius:50%;">
+                    <div>
+                        <div class="logo">أثر</div>
+                        <div style="font-size:0.8rem; opacity:0.7;">محول المستندات الذكي</div>
+                    </div>
+                </a>
+            </div>
+            <a href="index.html" class="btn btn-ghost">الرئيسية</a>
+        </nav>
+
+        <div class="glass-card" style="padding: 40px;">
+            <div style="text-align: center; margin-bottom: 40px;">
+                <h1 class="gradient-text" style="font-size: 2.5rem; font-weight: 900; margin-bottom: 10px;">PDF to Word
+                    Converter</h1>
+                <p style="color: var(--text-secondary);">حول ملفاتك إلى مستندات Word قابلة للتعديل بنفس التنسيق الأصلي
+                    100% ✨</p>
+            </div>
+
+            <div class="process-steps">
+                <div class="p-step active" id="step_upload">
+                    <div class="p-icon"><i class="fas fa-file-upload"></i></div>
+                    <div>رفع الملف</div>
+                </div>
+                <div class="p-step" id="step_process">
+                    <div class="p-icon"><i class="fas fa-cogs"></i></div>
+                    <div>المعالجة وتطبيق OCR</div>
+                </div>
+                <div class="p-step" id="step_download">
+                    <div class="p-icon"><i class="fas fa-file-word"></i></div>
+                    <div>تحميل Word</div>
+                </div>
+            </div>
+
+            <input type="file" id="pdfInput" accept=".pdf" style="display: none;">
+
+            <div class="upload-zone" id="dropZone" onclick="document.getElementById('pdfInput').click()">
+                <div class="upload-icon"><i class="fas fa-cloud-upload-alt"></i></div>
+                <h3 style="font-size: 1.5rem; margin-bottom: 10px;">اضغط للرفع أو اسحب الملف هنا</h3>
+                <p style="color: var(--text-secondary);">يدعم ملفات PDF (العربية والإنجليزية) Scanned & Native</p>
+                <div id="fileInfo" class="file-info"></div>
+            </div>
+
+            <div id="loaderBox" class="loader-box">
+                <h3 id="loaderText">جاري تحليل الملف...</h3>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <p style="margin-top: 10px; font-size: 0.9rem; opacity: 0.7;">يقوم الذكاء الاصطناعي الآن بإعادة بناء
+                    الهيكل، الجداول، والتنسيقات...</p>
+            </div>
+
+            <button id="convertBtn" class="btn btn-primary" onclick="requestConversion()">
+                تحويل الآن 🚀
+            </button>
+
+            <!-- Error/Success Messages -->
+            <div id="statusMsg" style="margin-top: 20px; text-align: center; display: none;"></div>
+        </div>
+    </div>
+
+    <script src="js/config.js"></script>
+    <script>
+        // PDF.js worker
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('pdfInput');
+        const fileInfo = document.getElementById('fileInfo');
+        const convertBtn = document.getElementById('convertBtn');
+        let selectedFile = null;
+
+        // Drag & Drop Logic
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        dropZone.addEventListener('dragover', () => dropZone.classList.add('dragover'));
+        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+        dropZone.addEventListener('drop', handleDrop);
+
+        function handleDrop(e) {
+            dropZone.classList.remove('dragover');
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            handleFiles(files);
+        }
+
+        fileInput.addEventListener('change', function () {
+            handleFiles(this.files);
+        });
+
+        function handleFiles(files) {
+            if (files.length > 0) {
+                if (files[0].type !== 'application/pdf') {
+                    alert('يرجى رفع ملف PDF فقط.');
+                    return;
+                }
+                selectedFile = files[0];
+                fileInfo.style.display = 'block';
+                fileInfo.innerHTML = `<i class="fas fa-check-circle"></i> تم اختيار: ${selectedFile.name} (${(selectedFile.size / 1024 / 1024).toFixed(2)} MB)`;
+                convertBtn.style.display = 'block';
+            }
+        }
+
+        async function startConversion() {
+            if (!selectedFile) return;
+
+            // UI Updates
+            document.getElementById('step_upload').classList.remove('active');
+            document.getElementById('step_process').classList.add('active');
+            dropZone.style.display = 'none';
+            convertBtn.style.display = 'none';
+            document.getElementById('loaderBox').style.display = 'block';
+
+            try {
+                updateProgress(5, "قراءة ملف PDF الكبير...");
+
+                // 1. Extract Pages Array (Not just one big string)
+                const pages = await extractPagesFromPDF(selectedFile);
+
+                let fullHtmlBody = "";
+
+                // 2. Batch Processing
+                // We process 5 pages at a time to keep context manageable for AI
+                const BATCH_SIZE = 5;
+                const totalBatches = Math.ceil(pages.length / BATCH_SIZE);
+
+                for (let i = 0; i < totalBatches; i++) {
+                    const start = i * BATCH_SIZE;
+                    const end = Math.min((i + 1) * BATCH_SIZE, pages.length);
+                    const batchContent = pages.slice(start, end).join("\n\n");
+
+                    const percent = Math.round(((i + 1) / totalBatches) * 80) + 5; // 5% to 85%
+                    updateProgress(percent, `معالجة الدفعة ${i + 1} من ${totalBatches} (الصفحات ${start + 1}-${end})...`);
+
+                    const batchHtml = await processWithAI(batchContent);
+                    fullHtmlBody += batchHtml;
+                }
+
+                updateProgress(90, "تجميع الملف النهائي...");
+
+                // Wrap in full structure
+                const finalDocHtml = `
+                    <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+                    <head><meta charset='utf-8'><style>
+                        body { font-family: 'Cairo', 'Times New Roman', serif; }
+                        table { border-collapse: collapse; width: 100%; margin: 20px 0; border: 1px solid #000; }
+                        td, th { border: 1px solid #000; padding: 5px; }
+                        p { margin-bottom: 10px; line-height: 1.5; }
+                        h1, h2, h3 { color: #2e2e2e; margin-top: 20px; }
+                        .rtl { direction: rtl; text-align: right; }
+                    </style></head>
+                    <body class="rtl">
+                        ${fullHtmlBody}
+                    </body></html>
+                `;
+
+                updateProgress(100, "تم التحويل بنجاح!");
+                const docxBlob = await generateDocx(finalDocHtml);
+
+                document.getElementById('step_process').classList.remove('active');
+                document.getElementById('step_download').classList.add('active');
+
+                // Trigger Download with Protection Check (Consistency)
+                // We bind the download action to a new button or auto-trigger? 
+                // Creating a download button manually to ensure they click it and trigger Validition
+
+                document.getElementById('statusMsg').style.display = 'block';
+                document.getElementById('statusMsg').innerHTML = `
+                    <h3 style="color:#10b981; margin-bottom:15px;">✨ اكتملت المعالجة (${pages.length} صفحة)</h3>
+                    <button id="finalDownloadBtn" class="btn btn-primary" style="width:100%;">📥 تحميل الملف الآن (DOCX)</button>
+                    <button class="btn btn-ghost" onclick="location.reload()" style="margin-top:10px;">تحويل ملف آخر</button>
+                `;
+
+                document.getElementById('finalDownloadBtn').onclick = () => {
+                    downloadFile(docxBlob, selectedFile.name.replace('.pdf', '.docx'));
+                };
+
+            } catch (error) {
+                console.error(error);
+                alert("حدث خطأ أثناء التحويل: " + error.message);
+                location.reload();
+            }
+        }
+
+        function updateProgress(percent, text) {
+            document.getElementById('progressFill').style.width = percent + '%';
+            document.getElementById('loaderText').innerText = text;
+        }
+
+        async function extractPagesFromPDF(file) {
+            const arrayBuffer = await file.arrayBuffer();
+            const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+            let pages = [];
+
+            for (let i = 1; i <= pdf.numPages; i++) {
+                const page = await pdf.getPage(i);
+                const textContent = await page.getTextContent();
+                // Simple layout preservation attempt: join items with space
+                const pageText = textContent.items.map(item => item.str).join(' ');
+                pages.push(`--- PAGE ${i} START ---\n${pageText}\n--- PAGE ${i} END ---`);
+            }
+            return pages;
+        }
+
+        async function processWithAI(text) {
+            const prompt = `
+            Task: Formatting Agent.
+            Convert this raw extracted text (from a PDF page) into semantic HTML for Word.
+            
+            Rules:
+            1. RECONSTRUCT TABLES using <table> tags. This is critical.
+            2. Use <h1>, <h2> for headers.
+            3. Fix broken Arabic words/lines if possible.
+            4. RETURN ONLY THE HTML BODY CONTENT (no <html> or <body> tags, just the inner content).
+            5. If no content, return empty string.
+            
+            Text Segment:
+            "${text.substring(0, 15000)}"
+            `;
+
+            try {
+                const res = await fetch(`${AtharConfig.BRIDGE_URL}?action=ai`, {
+                    method: "POST",
+                    headers: { "Content-Type": "text/plain;charset=utf-8" },
+                    body: JSON.stringify({
+                        model: "llama-3.3-70b-versatile",
+                        messages: [
+                            { role: "system", content: "Output ONLY HTML." },
+                            { role: "user", content: prompt }
+                        ]
+                    })
+                });
+
+                const data = await res.json();
+                if (data.status === 'error') throw new Error(data.message);
+
+                let html = data.data || "";
+                return html.replace(/```html/g, '').replace(/```/g, '').trim();
+
+            } catch (e) {
+                console.warn("AI Fallback for batch", e);
+                return `<p>${text}</p>`;
+            }
+        }
+
+        async function generateDocx(htmlContent) {
+            return htmlDocx.asBlob(htmlContent);
+        }
+
+        function downloadFile(blob, filename) {
+            // Enforce Payment/Protection Check before saving
+            ProtectionManager.verify(() => {
+                saveAs(blob, filename);
+            });
+        }
+    </script>
+</body>
+
+</html>
